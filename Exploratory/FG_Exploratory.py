@@ -20,6 +20,7 @@ import time
 from datetime import datetime
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 ###
 
 ########## Functions
@@ -127,6 +128,74 @@ ax.set_xlabel("Manufacturers - PWC Engines", fontsize=12)
 plt.grid()
 plt.show()
 ###################################################################################################
+
+
+
+
+###################################################################################################
+################################ Exploratory Analysis #############################################
+###################################################################################################
+
+################################ Check the percentage of NULL values ##############################
+# gives some infos on columns types and number of null values
+cols_null_summary = pd.DataFrame(fg_data.dtypes).T.rename(index={0:'Column Type'})
+cols_null_summary = cols_null_summary.append(pd.DataFrame(fg_data.isnull().sum()).T.rename(index={0:'Count of Null Values'}))
+cols_null_summary = cols_null_summary.append(pd.DataFrame(fg_data.isnull().sum() / fg_data.shape[0])
+                         .T.rename(index={0:'Percentage of Null Values'}))
+cols_null_summary.loc['Percentage of Null Values'] = (cols_null_summary.loc['Percentage of Null Values'].apply('{:.2%}'.format))
+
+cols_null_summary = cols_null_summary.sort_values('Count of Null Values', ascending = False, axis = 1)
+# cols_null_summary.to_csv('C:/Global Sales/Results/FG/FG_processed_null_summary.csv', index = False)             # write the result dataframe
+
+null_cols = []
+for i in range(0, 298):
+    if (cols_null_summary.iloc[2, i] == '100.00%'):
+        null_cols.append(cols_null_summary.columns[i])
+
+len(null_cols)    ### 65 column that are 100% NULL
+
+fg_data = fg_data[fg_data.columns[~fg_data.columns.isin(null_cols)]]   ### drop NULL columns --->  36,356 x 233
+##################################################################################################
+
+
+################################ engine_family vs build_year #####################################
+fg_pwc_engfamily_buildyr = fg_data.groupby(["engine_family", "build_year"]).size().reset_index(name="Count")
+print("Number of Distinct PWC's Engine Families: %d" %len(fg_data['engine_family'].unique()))        # 9 distinct PWC engine families
+
+fg_pwc_engfamily_buildyr = fg_pwc_engfamily_buildyr.pivot("engine_family", "build_year", "Count")
+fg_pwc_engfamily_buildyr = fg_pwc_engfamily_buildyr.fillna(0)
+
+# including all 9 engine_families
+ax = sns.heatmap(fg_pwc_engfamily_buildyr, linewidths=.5, cmap="BuPu")
+#fg_data['engine_family'][1:3]
+##################################################################################################
+
+
+################################ Keep only PT6 #####################################
+fg_data = fg_data.loc[fg_data['engine_family'] == 'PT6']             # only PT6   --->   24,732 x 233
+
+fg_pwc_engseries_buildyr = fg_data.groupby(["engine_series", "build_year"]).size().reset_index(name="Count")
+print("Number of Distinct PWC-PT6 Engine Series: %d" %len(fg_data['engine_series'].unique()))        # 9 distinct PWC engine families
+
+fg_pwc_engseries_buildyr = fg_pwc_engseries_buildyr.pivot("engine_series", "build_year", "Count")
+fg_pwc_engseries_buildyr = fg_pwc_engseries_buildyr.fillna(0)
+
+ax = sns.heatmap(fg_pwc_engseries_buildyr, linewidths=.5, cmap="BuPu")
+####################################################################################
+
+
+
+######################### Stats on PT6 #################################
+def get_stats(group):
+    return {'min': group.min(), 'max': group.max(),
+            'count': group.count(), 'mean': group.mean()}
+
+# Creation of a dataframe with statitical infos on each airline:
+simple_stats = fg_data['build_year'].groupby(fg_data['engine_series']).apply(get_stats).unstack()
+simple_stats = simple_stats.sort_values('count', ascending = 0)
+simple_stats.to_csv('C:/Global Sales/Results/FG/FG_PT6_summary.csv', index = False)             # write the result dataframe
+########################################################################
+
 
 
 
