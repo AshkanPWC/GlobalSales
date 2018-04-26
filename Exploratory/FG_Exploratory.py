@@ -194,44 +194,52 @@ def get_stats(group):
 simple_stats = fg_data['build_year'].groupby(fg_data['engine_series']).apply(get_stats).unstack()
 simple_stats = simple_stats.sort_values('count', ascending = 0)
 simple_stats.to_csv('C:/Global Sales/Results/FG/FG_PT6_summary.csv', index = False)             # write the result dataframe
+
+#------------------------------------------------------
+# striplot with all the values reported for the delays
+#------------------------------------------------------
+# I redefine the colors for correspondance with the pie charts
+colors = ['firebrick', 'gold', 'lightcoral', 'aquamarine', 'c', 'yellowgreen', 'grey',
+          'seagreen', 'tomato', 'violet', 'wheat', 'chartreuse', 'lightskyblue', 'royalblue']
+fig = plt.figure(1, figsize=(10,7))
+ax3 = sns.stripplot(y="engine_series", x="build_year", size = 4, palette = colors,
+                    data=fg_data, linewidth = 0.5,  jitter=True)
+#------------------------------------------------------
+# Barplot for PT6-EngineSeries, Status Count
+#------------------------------------------------------
+fig = plt.figure(1, figsize=(10,7))
+colors = ["red", "aquamarine", "yellowgreen", 'grey', 'firebrick'] 
+ax = sns.countplot(y="engine_series", hue='status', data=fg_data, palette=colors)
+plt.xlabel('PT6 - Engine Series, Status Count', fontsize=16, weight = 'bold', labelpad=10)
+#------------------------------------------------------
+# Distribution plot of PT6 over time
+#------------------------------------------------------
+fig = plt.figure(1, figsize=(10,7))
+fg_data.build_year.plot(kind='kde')
+plt.xlabel('PT6 Distribution over Time', fontsize=16, weight = 'bold', labelpad=10)
+#------------------------------------------------------
+# PT6 build_year histogram
+#------------------------------------------------------
+fig = plt.figure(1, figsize=(10,7))
+fg_data.build_year.hist()
+plt.xlabel('PT6 Histogram', fontsize=16, weight = 'bold', labelpad=10)
 ########################################################################
 
 
+#################### writing the filtered fg_data to the disk #####################################
+fg_data.to_csv('C:/Global Sales/Datasets/fg_data_set/FG_aircraft_details_filtered.csv', index = False)
+###################################################################################################
 
 
 
 
 
-
-
-
-
-
-#fg_data.groupby('build_year').age.plot(kind='kde')
-fg_data.build_year.plot(kind='kde')
-fg_data.build_year.hist()
-
-
-
-
-
-#### Operators
-len(fg_data.loc[:, 'serial_number'].unique())
-
-
-
-
-
-
-
+###### memory usage #########################
 fg_data.iloc[:,1:5].describe()
 print(fg_data.shape)
-fg_data.info()        ### memory usage: 777.4 MB
-
-fg_data.describe(include=['float64'])
-
-
-fg_data[(fg_data['Churn'] == 0) & (df['International plan'] == 'No')]['average_annual_hours'].max()
+fg_data.info()        ### memory usage: 777.4 MB dropped to 44.8+ MB
+############################################
+#fg_data.describe(include=['float64'])
 
 
 
