@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Author: Ashkan Ebadi
-Date:   April 25, 2018
+Date:   April 27, 2018
 
-Description: Exploratory Analysis on Flight Global Dataset
+Description: Preprocessing and minor Exploratory Analysis on Flight Global Events Dataset
 """
 
 ### Libraries
@@ -28,21 +28,97 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
-    print '\r%s |%s| %s%% \tScore: %s\r' % (prefix, bar, percent, suffix),
-    
+    print('\r%s |%s| %s%% \tScore: %s\r' % (prefix, bar, percent, suffix),)    
+
+def get_stats(group):
+    return {'min': group.min(), 'max': group.max(),
+            'count': group.count(), 'mean': group.mean()}
 ########## 
+    
+    
+tp = pd.read_csv(filepath_or_buffer='flight_global_aircraft_events_details.csv',sep=',', nrows = 1) 
+header_row = list(tp.columns)
+#header_row
+
+# names=header_row,
+## gives TextFileReader, which is iteratable with chunks of 1000 rows.
+tp = pd.read_csv(filepath_or_buffer='flight_global_aircraft_events_details.csv',names=header_row, sep=',',na_values='.',header=None, iterator=True, chunksize=1000) 
+## df is DataFrame. If error do list(tp)
+df = pd.concat(list(tp), ignore_index=True) 
+## if version 3.4, use tp
+# df = pd.concat(tp, ignore_index=True)
+
+
+
+
+
+
+tp = pd.read_csv(filepath_or_buffer='flight_global_aircraft_events_details.csv',sep=',', nrows = 1) 
+header_row = list(tp.columns)
+
+reader = pd.read_csv(filepath_or_buffer='flight_global_aircraft_events_details.csv',names=header_row, sep=',',na_values='.',header=None, iterator=True, chunksize=1000)
+progress = 0
+lines_number = 1986503
+for chunk in reader:
+    if progress == 0:
+        result = chunk.loc[chunk['flight_global_aircraft_events_details.current_engine_manufacturer'] == "Pratt & Whitney Canada"]
+    else:
+        temp = chunk.loc[chunk['flight_global_aircraft_events_details.current_engine_manufacturer'] == "Pratt & Whitney Canada"]
+        result = result.append(temp, ignore_index=True)
+    progress += 1000
+    print(int(round(float(progress)/lines_number * 100)), "%")
+
+
+result['flight_global_aircraft_events_details.current_engine_manufacturer'].head()    
+    
+
+#################### writing the filtered fg_data to the disk #####################################
+result.to_csv('C:/Global Sales/Datasets/fg_data_set/flight_global_PWC_aircraft_events_details.csv', index = False)
+###################################################################################################
+
+
+
+
+
+
+    
+
+
+filename = "flight_global_aircraft_events_details.csv"
+
+lines_number = sum(1 for line in open(filename))
+print lines_number
+lines_in_chunk = 5000 # I don't know what size is better
+counter = 0
+completed = 0
+reader = pd.read_csv(filename, chunksize=lines_in_chunk, sep=',', header = 0, engine='c', error_bad_lines=False, quoting=csv.QUOTE_ALL, index_col=False, encoding = 'latin-1')
+for chunk in reader:
+    if counter == 0:
+        result = chunk.loc[chunk['flight_global_aircraft_events_details.current_engine_manufacturer'] == "Pratt & Whitney Canada"]
+    else:
+        temp = chunk.loc[chunk['flight_global_aircraft_events_details.current_engine_manufacturer'] == "Pratt & Whitney Canada"]
+        result = result.append(temp, ignore_index=True)
+        
+    #result.to_csv('./DSVM/fg_data_set/chunk_fg.csv', index=False, header=False, mode='a')
+    #result_df = pd.concat([x,y], ignore_index=True)
+    # showing progress:
+    counter += lines_in_chunk
+    new_completed = int(round(float(counter)/lines_number * 100))
+    if (new_completed > completed): 
+        completed = new_completed
+        print "Completed", completed, "%"
+
+
     
     
     
 ################### Loading Datasets ##################     336,383 x 298▌
 start_time = time.time()
-fg_data = pd.read_csv('flight_global_aircraft_details.csv', sep=',', header = 0, low_memory=False, error_bad_lines=False, quoting=csv.QUOTE_ALL, index_col=False, encoding = 'latin-1')
+fg_data = pd.read_csv('flight_global_aircraft_events_details.csv', sep=',', header = 0, error_bad_lines=False, quoting=csv.QUOTE_ALL, index_col=False, encoding = 'latin-1', engine='python')
 
-print("======== Flight Global loaded in %.2f seconds =========" %(time.time() - start_time))
+print("======== Flight Global Events loaded in %.2f seconds =========" %(time.time() - start_time))
 #######################################################
 
-
-#pd.DataFrame(fg_data.describe()).to_csv('fg_data_summary.csv')
 
 #### renaming the column names
 col_names = []
@@ -186,10 +262,6 @@ ax = sns.heatmap(fg_pwc_engseries_buildyr, linewidths=.5, cmap="BuPu")
 
 
 ######################### Stats on PT6 #################################
-def get_stats(group):
-    return {'min': group.min(), 'max': group.max(),
-            'count': group.count(), 'mean': group.mean()}
-
 # Creation of a dataframe with statitical infos on each airline:
 simple_stats = fg_data['build_year'].groupby(fg_data['engine_series']).apply(get_stats).unstack()
 simple_stats = simple_stats.sort_values('count', ascending = 0)
